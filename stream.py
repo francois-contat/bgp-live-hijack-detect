@@ -21,9 +21,10 @@ def print_prefixes():
     '''
     print("ok")
     t = threading.Timer(5.0, print_prefixes)
-    t.start() 
+    t.start()
     if TREE:
         print(TREE.prefixes())
+        print(len(TREE.prefixes()))
 
 def argument_parse():
     '''
@@ -37,7 +38,13 @@ def argument_parse():
     if not args.asn and not args.asfile:
         print("You must give an as or an asfile to the program", file=sys.stdout)
         sys.exit(1)
-    return args
+    asns = set()
+    if args.asfile:
+        for elem in open(args.asfile).readlines():
+            asns.add(int(elem))
+    else:
+        asns.add(args.asn)
+    return asns
 
 def stream_setup():
     '''
@@ -58,15 +65,19 @@ def stream_setup():
     }))
     return web_socket
 if __name__ == "__main__":
-    ARGS = argument_parse()
+   # ARGS = argument_parse()
+    ASNS = argument_parse()
+    print(ASNS)
     TREE = radix.Radix()
-    t = threading.Timer(10.0, print_prefixes)
-    t.start()
+    #t = threading.Timer(10.0, print_prefixes)
+    #t.start()
     WEB_SOCKET = stream_setup()
     for data in WEB_SOCKET:
         parsed = json.loads(data)
         if "announcements" in parsed["data"]:
-            if ARGS.asn == parsed["data"]["path"][-1]:
-                for groups in parsed["data"]["announcements"]:
-                    for prefix in groups['prefixes']:
-                        TREE.add(prefix)
+            if type(parsed["data"]["path"][-1]) != list:
+                if parsed["data"]["path"][-1] in ASNS:
+                    for groups in parsed["data"]["announcements"]:
+                        for prefix in groups['prefixes']:
+                            TREE.add(prefix)
+                            print(len(TREE.prefixes()))
